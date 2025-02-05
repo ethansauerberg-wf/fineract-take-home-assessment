@@ -5,62 +5,6 @@ REQUIREMENTS
 * `Java >= 17` (Azul Zulu JVM is tested by our CI on GitHub Actions)
 * MariaDB `10.9`
 
-You can run the required version of the database server in a container, instead of having to install it, like this:
-
-    docker run --name mariadb-10.9 -p 3306:3306 -e MARIADB_ROOT_PASSWORD=mysql -d mariadb:10.9
-
-and stop and destroy it like this:
-
-    docker rm -f mariadb-10.9
-
-<br>Beware that this database container database keeps its state inside the container and not on the host filesystem.  It is lost when you destroy (rm) this container.  This is typically fine for development.  See [Caveats: Where to Store Data on the database container documentation](https://hub.docker.com/_/mariadb) re. how to make it persistent instead of ephemeral.<br>
-
-Tomcat v9 is only required if you wish to deploy the Fineract WAR to a separate external servlet container.  Note that you do not require to install Tomcat to develop Fineract, or to run it in production if you use the self-contained JAR, which transparently embeds a servlet container using Spring Boot.  (Until FINERACT-730, Tomcat 7/8 were also supported, but now Tomcat 9 is required.)
-
-<br>IMPORTANT: If you use MySQL or MariaDB
-============
-
-Recently (after release `1.7.0`), we introduced improved date time handling in Fineract. Date time is from now on stored in UTC and we are enforcing UTC timezone even on the JDBC driver, e. g. for MySQL:
-
-```
-serverTimezone=UTC&useLegacyDatetimeCode=false&sessionVariables=time_zone=‘-00:00’
-```
-
-__DO__: If you do use MySQL as your Fineract database then the following configuration is highly recommended:
-
-* Run the application in UTC (the default command line in our Docker image has the necessary parameters already set)
-* Run the MySQL database server in UTC (if you use managed services like AWS RDS then this should be the default anyway, but it would be good to double-check)
-
-__DON'T__: In case the Fineract instance and the MySQL server are __not__ running in UTC then the following could happen:
-
-* MySQL is saving date time values differently from PostgreSQL
-* Example scenario: if the Fineract instance runs in timezone: GMT+2, and the local date time is 2022-08-11 17:15 ...
-* ... then __PostgreSQL saves__ the LocalDateTime as is: __2022-08-11 17:15__
-* ... and __MySQL saves__ the LocalDateTime in UTC: __2022-08-11 15:15__
-* ... but when we __read__ the date time from PostgreSQL __or__ from MySQL, then both systems give us the same values: __2022-08-11 17:15 GMT+2__
-
-If a previously used Fineract instance didn't run in UTC (backward compatibility), then all prior dates will be read wrongly by MySQL/MariaDB. This can cause issues when you run the database migration scripts.
-
-__RECOMMENDATION__: you need to shift all dates in your database by the timezone offset that your Fineract instance used.
-
-<br>INSTRUCTIONS: How to run for local development
-============
-
-Run the following commands:
-1. `./gradlew createDB -PdbName=fineract_tenants`
-1. `./gradlew createDB -PdbName=fineract_default`
-1. `./gradlew bootRun`
-
-
-INSTRUCTIONS: How to execute Integration Tests -- RUN IN INTELLIJ ?
-============
-> Note that if this is the first time to access MySQL DB, then you may need to reset your password.
-
-Run the following commands:
-1. `./gradlew createDB -PdbName=fineract_tenants`
-1. `./gradlew createDB -PdbName=fineract_default`
-1. `./gradlew clean test`
-
 
 INSTRUCTIONS: How to run using Docker and docker-compose
 ===================================================
@@ -98,10 +42,16 @@ _(Note that in previous versions, the `mysqlserver` environment variable used at
 `docker run` time did something similar; this has changed in [FINERACT-773](https://issues.apache.org/jira/browse/FINERACT-773)),
 and the `mysqlserver` environment variable is now no longer supported.)_
 
-<br>TOMCAT CONFIGURATION
-====================
 
-Please refer to the `application.properties` and the official Spring Boot documentation (https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html) on how to do performance tuning for Tomcat. Note: you can set now the acceptable form POST size (default is 2MB) via environment variable `FINERACT_SERVER_TOMCAT_MAX_HTTP_FORM_POST_SIZE`.
+INSTRUCTIONS: How to execute Integration Tests
+============
+The easiest way to execute integration tests is by following this wiki: 
+https://fineract-academy.com/how-to-run-fineract-integration-test-with-intellij-idea.html
+
+THE REST OF THIS README IS NOT REQUIRED FOR THE TAKE HOME ASSESSMENT.
+============
+But feel free to read if you so desire. You can also visit the original ReadMe [here](https://github.com/apache/fineract?tab=readme-ov-file#apache-fineract-a-platform-for-microfinance) 
+
 
 Checkstyle and Spotless
 ============
